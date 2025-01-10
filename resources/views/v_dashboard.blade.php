@@ -255,16 +255,24 @@
             // console.log(value);
 
             try {
-                var response = await axios.get("{{ route('diagram.batang') }}");
-                console.log(response);
-                var dSeries = response.data.items.series;
-                var dCategories = response.data.items.categories;
-                chartBatang.updateOptions({
-                    series: dSeries,
-                    xaxis: {
-                        categories: dCategories,
-                    }
-                })
+
+                $.ajax({
+                        url: "{{ route('diagram.batang') }}",
+                        method: "GET"
+                    })
+                    .then(function(data) {
+                        var dSeries = data.items.series;
+                        var dCategories = data.items.categories;
+                        // console.log(dSeries);
+                        chartBatang.updateOptions({
+                            series: dSeries,
+                            xaxis: {
+                                categories: dCategories,
+                            }
+                        })
+                    });
+
+
             } catch (error) {
                 console.error(error);
             }
@@ -275,16 +283,23 @@
             // console.log(value);
 
             try {
-                var response = await axios.get("{{ route('diagram.line') }}");
-                console.log(response);
-                var dSeries = response.data.items.series;
-                var dCategories = response.data.items.categories;
-                chartLine.updateOptions({
-                    series: dSeries,
-                    xaxis: {
-                        categories: dCategories,
-                    }
-                })
+
+                $.ajax({
+                        url: "{{ route('diagram.line') }}",
+                        method: "GET"
+                    })
+                    .then(function(data) {
+                        var dSeries = data.items.series;
+                        var dCategories = data.items.categories;
+                        chartLine.updateOptions({
+                            series: dSeries,
+                            xaxis: {
+                                categories: dCategories,
+                            }
+                        })
+                    });
+
+
             } catch (error) {
                 console.error(error);
             }
@@ -295,15 +310,21 @@
             // console.log(value);
 
             try {
-                var response = await axios.get("{{ route('diagram.pie') }}");
-                console.log(response);
-                var dSeries = response.data.items.series;
-                var dCategories = response.data.items.categories;
-                chartPie.updateOptions({
-                    series: dSeries,
-                    labels: dCategories
+                $.ajax({
+                        url: "{{ route('diagram.pie') }}",
+                        method: "GET"
+                    })
+                    .then(function(data) {
+                        var dSeries = data.items.series;
+                        var dCategories = data.items.categories;
+                        chartPie.updateOptions({
+                            series: dSeries,
+                            labels: dCategories
 
-                })
+                        })
+                    });
+
+
             } catch (error) {
                 console.error(error);
             }
