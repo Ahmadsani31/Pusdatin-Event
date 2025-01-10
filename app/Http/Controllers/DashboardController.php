@@ -9,7 +9,8 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        return view('v_dashboard');
+        $pageTitle = 'Dashboard';
+        return view('v_dashboard', compact('pageTitle'));
     }
 
     public function diagramBatang()

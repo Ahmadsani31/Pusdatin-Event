@@ -33,7 +33,7 @@
                 <!-- card  -->
                 <div class="card">
                     <div class="card-header">
-                        <h5>Peserta Qris</h5>
+                        <h5>Peserta</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -59,7 +59,7 @@
 
         </div>
         <div class="row">
-            <div class="col-xl-6 col-lg-6 col-md-12 col-12 mt-6">
+            <div class="col-xl-12 col-lg-6 col-md-12 col-12 mt-6">
                 <!-- card -->
                 <div class="card ">
                     <!-- card body -->
@@ -75,7 +75,7 @@
                 </div>
             </div>
 
-            <div class="col-xl-6 col-lg-6 col-md-12 col-12 mt-6">
+            <div class="col-xl-12 col-lg-6 col-md-12 col-12 mt-6">
                 <!-- card -->
                 <div class="card ">
                     <!-- card body -->
@@ -238,7 +238,7 @@
                 breakpoint: 480,
                 options: {
                     chart: {
-                        width: 200
+                        width: 400
                     },
                     legend: {
                         position: 'bottom'
