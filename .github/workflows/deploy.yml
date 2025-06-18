@@ -48,8 +48,7 @@ jobs:
       # Step 8: Deploy files to VPS using rsync over SSH
       - name: Deploy to VPS
         run: |
-          rsync -az --delete --exclude=".git*" --exclude="node_modules" --exclude="tests" --exclude=".env" \
-            -e "ssh -i private_key -o StrictHostKeyChecking=no" ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}
+          rsync -az --exclude='.git' --exclude='node_modules' ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}
 
       # Step 9: Run post-deploy commands (migrate, cache clear, dll)
       - name: Run Laravel commands on VPS
