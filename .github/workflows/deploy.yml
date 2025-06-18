@@ -44,15 +44,13 @@ jobs:
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY_B64 }}" > private_key
           chmod 600 private_key
-      - name: Test SSH from GitHub
-        run: |
-          ssh -v -i private_key -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "echo Connected"
+
       # Step 8: Deploy files to VPS using rsync over SSH
       - name: Deploy to VPS
         run: |
-          rsync -az --delete --exclude=".git*" --exclude="node_modules" --exclude=".env" \
-          -e "ssh -i private_key -o StrictHostKeyChecking=no" ./ \
-          ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}
+          echo "${{ secrets.SSH_PRIVATE_KEY_B64 }}" > private_key
+          chmod 600 private_key
+          rsync -az --delete -e "ssh -i private_key -o StrictHostKeyChecking=no" ./ laravel-name@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}
 
       # Step 9: Run post-deploy commands (migrate, cache clear, dll)
       - name: Run Laravel commands on VPS
