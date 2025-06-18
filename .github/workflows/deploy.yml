@@ -1,51 +1,63 @@
-name: Laravel CI/CD Deploy to VPS
+name: Deploy Laravel App to VPS
 
 on:
   push:
-    branches: [main]  # Ganti dengan branch kamu
+    branches:
+      - main   # atau ganti ke branch yang kamu pakai
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v3
+      # Step 1: Checkout code dari GitHub
+      - name: Checkout source code
+        uses: actions/checkout@v3
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.2'
-        extensions: mbstring, bcmath, pdo, mysql
+      # Step 2: Setup PHP environment
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, bcmath, curl, openssl, pdo, tokenizer, xml
 
-    - name: Install Dependencies
-      run: composer install --no-progress --prefer-dist --optimize-autoloader
+      # Step 3: Install composer dependencies
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-    - name: Run Laravel Test
-      run: |
-        cp .env.example .env
-        php artisan key:generate
-        php artisan test
+      # Step 4: Setup Node.js versi 22
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
 
-    - name: Setup SSH Key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+      # Step 5: Install frontend dependencies
+      - name: Install NPM dependencies
+        run: npm ci
 
-    - name: Upload Laravel to VPS (rsync)
-      run: |
-        rsync -az --exclude=".git" --exclude="node_modules" --exclude=".env" ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}
+      # Step 6: Build frontend assets with Vite
+      - name: Build assets using Vite
+        run: npm run build
 
-    - name: Run Artisan Commands on VPS
-      run: |
-        ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-          cd ${{ secrets.VPS_PATH }}
-          composer install --no-interaction --prefer-dist --optimize-autoloader
-          php artisan migrate --force
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:cache
-          chown -R www-data:www-data storage bootstrap/cache
-        EOF
+      # Step 7: Prepare SSH private key for connection
+      - name: Prepare SSH key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
+          chmod 600 private_key
+
+      # Step 8: Deploy files to VPS using rsync over SSH
+      - name: Deploy to VPS
+        run: |
+          rsync -az --delete --exclude=".git*" --exclude="node_modules" --exclude="tests" --exclude=".env" \
+            -e "ssh -i private_key -o StrictHostKeyChecking=no" ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}
+
+      # Step 9: Run post-deploy commands (migrate, cache clear, dll)
+      - name: Run Laravel commands on VPS
+        run: |
+          ssh -i private_key -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            cd ${{ secrets.VPS_PATH }}
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+          EOF
