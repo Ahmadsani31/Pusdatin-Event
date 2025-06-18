@@ -21,44 +21,22 @@ jobs:
           php-version: '8.2'
           extensions: mbstring, bcmath, curl, openssl, pdo, tokenizer, xml
 
-      # Step 3: Install composer dependencies
-      - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
-
-      # Step 4: Setup Node.js versi 22
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '22'
-
-      # Step 5: Install frontend dependencies
-      - name: Install NPM dependencies
-        run: npm ci
-
-      # Step 6: Build frontend assets with Vite
-      - name: Build assets using Vite
-        run: npm run build
-
-      # Step 7: Prepare SSH private key for connection
-      - name: Prepare SSH key
+      - name: Setup SSH
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
-          chmod 600 private_key
-      - name: Test SSH from GitHub
-        run: |
-          ssh -v -i private_key -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "echo Connected"
-      # Step 8: Deploy files to VPS using rsync over SSH
-      - name: Deploy to VPS
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
-          chmod 600 private_key
-          rsync -az --delete -e "ssh -i private_key -o StrictHostKeyChecking=no" ./ adsa-laravel@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      # Step 9: Run post-deploy commands (migrate, cache clear, dll)
+      - name: Deploy via rsync
+        run: |
+          rsync -az --exclude='.git' --exclude='node_modules' ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}
+
       - name: Run Laravel commands on VPS
         run: |
-          ssh -i private_key -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             cd ${{ secrets.VPS_PATH }}
+            composer install --no-interaction --prefer-dist --optimize-autoloader
             php artisan migrate --force
             php artisan config:cache
             php artisan route:cache
