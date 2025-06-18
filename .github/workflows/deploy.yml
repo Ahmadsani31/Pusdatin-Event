@@ -40,17 +40,19 @@ jobs:
         run: npm run build
 
       # Step 7: Prepare SSH private key for connection
-      - name: Prepare SSH key from base64
+      - name: Prepare SSH key
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY_B64 }}" > private_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
           chmod 600 private_key
-
+      - name: Test SSH from GitHub
+        run: |
+          ssh -v -i private_key -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "echo Connected"
       # Step 8: Deploy files to VPS using rsync over SSH
       - name: Deploy to VPS
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY_B64 }}" > private_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
           chmod 600 private_key
-          rsync -az --delete -e "ssh -i private_key -o StrictHostKeyChecking=no" ./ root@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}
+          rsync -az --delete -e "ssh -i private_key -o StrictHostKeyChecking=no" ./ adsa-laravel@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}
 
       # Step 9: Run post-deploy commands (migrate, cache clear, dll)
       - name: Run Laravel commands on VPS
