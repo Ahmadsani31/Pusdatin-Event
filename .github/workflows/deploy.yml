@@ -50,7 +50,7 @@ jobs:
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY_B64 }}" > private_key
           chmod 600 private_key
-          rsync -az --delete -e "ssh -i private_key -o StrictHostKeyChecking=no" ./ laravel-name@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}
+          rsync -az --delete -e "ssh -i private_key -o StrictHostKeyChecking=no" ./ root@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}
 
       # Step 9: Run post-deploy commands (migrate, cache clear, dll)
       - name: Run Laravel commands on VPS
