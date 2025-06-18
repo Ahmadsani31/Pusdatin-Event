@@ -153,7 +153,9 @@
 
 
         var options = {
-            series: [],
+            series: [{
+                data: [400, 430, 448, 470, 540, 580, 690, 1100, 1200, 1380]
+            }],
             chart: {
                 type: 'bar',
                 height: 350
@@ -175,7 +177,9 @@
                 colors: ['transparent']
             },
             xaxis: {
-                categories: [],
+                categories: ['South Korea', 'Canada', 'United Kingdom', 'Netherlands', 'Italy', 'France', 'Japan',
+                    'United States', 'China', 'Germany'
+                ],
             },
             yaxis: {
                 title: {
@@ -250,33 +254,33 @@
         var chartPie = new ApexCharts(document.querySelector("#diagramPie"), optionsPie);
         chartPie.render();
 
-        getDiagramBatang();
-        async function getDiagramBatang() {
-            // console.log(value);
+        // getDiagramBatang();
+        // async function getDiagramBatang() {
+        //     // console.log(value);
 
-            try {
+        //     try {
 
-                $.ajax({
-                        url: "{{ route('diagram.batang') }}",
-                        method: "GET"
-                    })
-                    .then(function(data) {
-                        var dSeries = data.items.series;
-                        var dCategories = data.items.categories;
-                        // console.log(dSeries);
-                        chartBatang.updateOptions({
-                            series: dSeries,
-                            xaxis: {
-                                categories: dCategories,
-                            }
-                        })
-                    });
+        //         $.ajax({
+        //                 url: "{{ route('diagram.batang') }}",
+        //                 method: "GET"
+        //             })
+        //             .then(function(data) {
+        //                 var dSeries = data.items.series;
+        //                 var dCategories = data.items.categories;
+        //                 console.log(dSeries);
+        //                 chartBatang.updateOptions({
+        //                     series: dSeries,
+        //                     xaxis: {
+        //                         categories: dCategories,
+        //                     }
+        //                 })
+        //             });
 
 
-            } catch (error) {
-                console.error(error);
-            }
-        }
+        //     } catch (error) {
+        //         console.error(error);
+        //     }
+        // }
 
         getDiagramLine();
         async function getDiagramLine() {

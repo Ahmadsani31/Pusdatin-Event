@@ -2,48 +2,42 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\QrisTransactionsService;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    protected $qrisService;
+    public function __construct(QrisTransactionsService $qrisService)
+    {
+        $this->qrisService = $qrisService;
+    }
+
     public function index()
     {
         $pageTitle = 'Dashboard';
         return view('v_dashboard', compact('pageTitle'));
     }
 
-    public function diagramBatang()
+    public function diagramBatang(Request $request)
     {
 
-        $query = DB::table('qris_transaction')
-            ->leftJoin('peserta_event', 'qris_transaction.peserta_id', '=', 'peserta_event.id')
-            ->leftJoin('ref_event', 'peserta_event.event_id', '=', 'ref_event.id')
-            ->select('ref_event.nama_event', DB::raw('SUM(qris_transaction.nominal) as total_nominal'), DB::raw('COUNT(qris_transaction.id) as total_transaksi'))
-            ->groupBy('ref_event.nama_event')->orderBy('total_nominal', 'DESC')
-            ->limit(5)->get();
-
-        foreach ($query as $value) {
-            $categories[] = $value->nama_event;
-            $jumlah[] = $value->total_nominal;
+        if ($request->ajax()) {
+            # code...
+            $qrisData = $this->qrisService->getTopEventsSummary();
+            return response()->json(['param' => true, 'items' => $qrisData]);
+        } else {
+            throw new Exception("Error Processing Request", 1);
         }
-
-        $series[] = [
-            'name' => 'Nominal',
-            'data' => $jumlah
-        ];
-
-        return response()->json(['param' => true, 'items' => [
-            'series' => $series,
-            'categories' => $categories
-        ]]);
     }
 
     public function diagramLine()
     {
-        $query = DB::table('qris_transaction')
-            ->leftJoin('peserta_event', 'qris_transaction.peserta_id', '=', 'peserta_event.id')
-            ->select(DB::raw('DATE_FORMAT(qris_transaction.tanggal_transaksi,"%Y-%m-%d") as bulan'), DB::raw('SUM(qris_transaction.nominal) as total_nominal'))
+        $query = DB::table('qris_transactions')
+            ->leftJoin('peserta_events', 'qris_transactions.peserta_id', '=', 'peserta_events.id')
+            ->select(DB::raw('DATE_FORMAT(qris_transactions.tanggal_transaksi,"%Y-%m-%d") as bulan'), DB::raw('SUM(qris_transactions.nominal) as total_nominal'))
             ->groupBy('bulan')->orderBy('bulan', 'DESC')->get();
 
         foreach ($query as $value) {

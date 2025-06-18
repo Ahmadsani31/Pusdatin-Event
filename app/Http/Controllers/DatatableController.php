@@ -30,11 +30,11 @@ class DatatableController extends Controller
             switch ($tabel) {
                 case 'peserta_qris':
                     // $data = PesertaEvent::select('*');
-                    $query = DB::table('qris_transaction')
-                        ->join('peserta_qris', 'qris_transaction.peserta_id', '=', 'peserta_qris.id')
-                        ->select('qris_transaction.peserta_id', 'peserta_qris.nama_pemilik_qris AS nama_pemilik', 'peserta_qris.nama_usaha', DB::raw('COUNT(qris_transaction.id) AS total_transaksi'), DB::raw('SUM(qris_transaction.nominal) AS total_nominal'))
-                        ->groupBy('qris_transaction.peserta_id', 'peserta_qris.nama_pemilik_qris', 'peserta_qris.nama_usaha')
-                        ->orderBy('qris_transaction.peserta_id');
+                    $query = DB::table('qris_transactions')
+                        ->join('peserta_qris', 'qris_transactions.peserta_id', '=', 'peserta_qris.id')
+                        ->select('qris_transactions.peserta_id', 'peserta_qris.nama_pemilik_qris AS nama_pemilik', 'peserta_qris.nama_usaha', DB::raw('COUNT(qris_transactions.id) AS total_transaksi'), DB::raw('SUM(qris_transactions.nominal) AS total_nominal'))
+                        ->groupBy('qris_transactions.peserta_id', 'peserta_qris.nama_pemilik_qris', 'peserta_qris.nama_usaha')
+                        ->orderBy('qris_transactions.peserta_id');
                     return DataTables::of($query)
                         ->addIndexColumn()
                         ->addColumn('total_nominal', function ($row) {
