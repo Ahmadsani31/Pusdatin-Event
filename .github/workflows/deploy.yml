@@ -66,11 +66,33 @@ jobs:
         run: |
           ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             set -e
-
+            echo "CEK KONDISI REPO"
             if [ ! -d "${{ secrets.VPS_PATH }}/.git" ]; then
               echo "🔧 Fresh deploy: cloning repo"
-              git clone ${{ secrets.REPO_URL }} ${{ secrets.VPS_PATH }}
               cd ${{ secrets.VPS_PATH }}
+              composer install --no-interaction --prefer-dist --optimize-autoloader
+
+              # Setup .env dan konfigurasi database
+              cp .env.example .env
+
+              sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
+              sed -i 's/^#\?DB_HOST=.*/DB_HOST=${{ secrets.VPS_HOST }}/' .env
+              sed -i 's/^#\?DB_PORT=.*/DB_PORT=3306/' .env
+              sed -i 's/^#\?DB_DATABASE=.*/DB_DATABASE=${{ secrets.DB_DATABASE }}/' .env
+              sed -i 's/^#\?DB_USERNAME=.*/DB_USERNAME=${{ secrets.DB_USERNAME }}/' .env
+              sed -i 's/^#\?DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/' .env
+
+              # Generate app key
+              php artisan key:generate
+
+              # Install frontend & build vite (pastikan node & npm terinstal di VPS)
+              npm install
+              npm run build
+
+              php artisan migrate --force
+              php artisan config:cache
+              php artisan route:cache
+              php artisan view:cache
             else
               echo "🔄 Existing app found: pulling latest changes"
               cd ${{ secrets.VPS_PATH }}
@@ -78,29 +100,5 @@ jobs:
               git pull origin main
             fi
 
-            echo "📦 Installing dependencies"
-            composer install --no-interaction --prefer-dist --optimize-autoloader
 
-            # Setup .env dan konfigurasi database
-            cp .env.example .env
-
-            sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
-            sed -i 's/^#\?DB_HOST=.*/DB_HOST=${{ secrets.VPS_HOST }}/' .env
-            sed -i 's/^#\?DB_PORT=.*/DB_PORT=3306/' .env
-            sed -i 's/^#\?DB_DATABASE=.*/DB_DATABASE=${{ secrets.DB_DATABASE }}/' .env
-            sed -i 's/^#\?DB_USERNAME=.*/DB_USERNAME=${{ secrets.DB_USERNAME }}/' .env
-            sed -i 's/^#\?DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/' .env
-
-            # Generate app key
-            php artisan key:generate
-
-            # Install frontend & build vite (pastikan node & npm terinstal di VPS)
-            npm install
-            npm run build
-
-            echo "⚙️ Running Laravel commands"
-            php artisan migrate --force
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
           EOF
