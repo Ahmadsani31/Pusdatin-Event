@@ -3,24 +3,54 @@ name: Deploy Laravel App to VPS
 on:
   push:
     branches:
-      - main   # atau ganti ke branch yang kamu pakai
+      - main # atau ganti ke branch yang kamu pakai
 
 jobs:
-  deploy:
+  laravel-test:
     runs-on: ubuntu-latest
 
     steps:
       # Step 1: Checkout code dari GitHub
-      - name: Checkout source code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      # Step 2: Setup PHP environment
+      # Step 2: Setup PHP environment for TEST
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: "8.2"
           extensions: mbstring, bcmath, curl, openssl, pdo, tokenizer, xml
 
+      # Step 3: Install Dependencies for TEST
+      - name: Install Composer Dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      # Step 4: Setup Laravel for TEST
+      - name: Setup Laravel
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "22"
+
+      - name: Install dependencies (NPM)
+        run: npm ci
+
+      - name: Build assets with Vite
+        run: npm run build
+
+      - name: Run Tests
+        run: php artisan test
+  deploy:
+    needs: laravel-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      # Step 1: Checkout code dari GitHub
+      - name: Checkout source code
+        uses: actions/checkout@v3
+      # Step 1: Setup SSH
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -35,8 +65,40 @@ jobs:
       - name: Run Laravel commands on VPS
         run: |
           ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            cd ${{ secrets.VPS_PATH }}
+            set -e
+
+            if [ ! -d "${{ secrets.VPS_PATH }}/.git" ]; then
+              echo "🔧 Fresh deploy: cloning repo"
+              git clone ${{ secrets.REPO_URL }} ${{ secrets.VPS_PATH }}
+              cd ${{ secrets.VPS_PATH }}
+            else
+              echo "🔄 Existing app found: pulling latest changes"
+              cd ${{ secrets.VPS_PATH }}
+              git reset --hard
+              git pull origin main
+            fi
+
+            echo "📦 Installing dependencies"
             composer install --no-interaction --prefer-dist --optimize-autoloader
+
+            # Setup .env dan konfigurasi database
+            cp .env.example .env
+
+            sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
+            sed -i 's/^#\?DB_HOST=.*/DB_HOST=${{ secrets.VPS_HOST }}/' .env
+            sed -i 's/^#\?DB_PORT=.*/DB_PORT=3306/' .env
+            sed -i 's/^#\?DB_DATABASE=.*/DB_DATABASE=${{ secrets.DB_DATABASE }}/' .env
+            sed -i 's/^#\?DB_USERNAME=.*/DB_USERNAME=${{ secrets.DB_USERNAME }}/' .env
+            sed -i 's/^#\?DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/' .env
+
+            # Generate app key
+            php artisan key:generate
+
+            # Install frontend & build vite (pastikan node & npm terinstal di VPS)
+            npm install
+            npm run build
+
+            echo "⚙️ Running Laravel commands"
             php artisan migrate --force
             php artisan config:cache
             php artisan route:cache
